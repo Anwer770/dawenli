@@ -281,10 +281,18 @@ export function startServer() {
   const app = express();
   app.disable("x-powered-by");
 
+  // ALLOW_EMBED=1 بتفتح التضمين في iframe (بيئة المعاينة/التجربة بس) — في الإنتاج
+  // سايبينها مقفولة على SAMEORIGIN عشان تحمي من clickjacking.
+  const allowEmbed = process.env.ALLOW_EMBED === "1";
+  // جوه iframe المعاينة الكوكي لازم SameSite=None عشان المتصفح يبعته مع طلبات الـ API
+  // اللي جاية من origin تاني. في الإنتاج Strict (أأمن) وده الافتراضي.
+  const cookieSameSite = allowEmbed ? "None; Secure" : "Strict";
+
   // هيدرات أمان أساسية على كل الردود
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    if (allowEmbed) res.removeHeader("X-Frame-Options");
+    else res.setHeader("X-Frame-Options", "SAMEORIGIN");
     res.setHeader("Referrer-Policy", "same-origin");
     res.setHeader("Permissions-Policy", "microphone=(self), camera=()");
     next();
@@ -318,7 +326,7 @@ export function startServer() {
     const maxAge = remember === false ? "" : `; Max-Age=${30 * 86400}`;
     res.setHeader(
       "Set-Cookie",
-      `dawenli_session=${token}; HttpOnly; SameSite=Strict; Path=/${maxAge}`
+      `dawenli_session=${token}; HttpOnly; SameSite=${cookieSameSite}; Path=/${maxAge}`
     );
   }
 
@@ -331,7 +339,10 @@ export function startServer() {
   function openAdminSession(res, adminId, remember) {
     const token = newAdminSession(adminId);
     const maxAge = remember === false ? "" : `; Max-Age=${30 * 86400}`;
-    res.setHeader("Set-Cookie", `dawenli_admin=${token}; HttpOnly; SameSite=Strict; Path=/${maxAge}`);
+    res.setHeader(
+      "Set-Cookie",
+      `dawenli_admin=${token}; HttpOnly; SameSite=${cookieSameSite}; Path=/${maxAge}`
+    );
   }
 
   // دخول المستخدمين: إيميل + باسورد (مفيش أدمن هنا)
@@ -614,6 +625,9 @@ export function startServer() {
       name: user.name,
       isOwner: !!user.is_owner,
       today: localToday(),
+      // مزود الذكاء متظبط ولا لأ — الواجهة بتستخدمها تعرض بانر إعداد لصاحب التطبيق،
+      // وتقول للمستخدم العادي إن التسجيل بالكلام مش متاح لسه بدل ما يفشل من غير سبب.
+      aiReady: aiConfigured(),
     });
   });
   // تكلفة المستخدم على الذكاء الاصطناعي — يظهر له في الرئيسية
@@ -878,7 +892,8 @@ export function startServer() {
         res.json({ transcript, reply });
       } catch (err) {
         console.error("ask voice error:", err);
-        res.status(500).json({ error: "حصل خطأ في معالجة الصوت، جرّب تاني" });
+        const friendly = aiErrorMessage(err);
+        res.status(friendly ? 503 : 500).json({ error: friendly || "حصل خطأ في معالجة الصوت، جرّب تاني" });
       }
     }
   );
@@ -896,7 +911,8 @@ export function startServer() {
       res.send(buf);
     } catch (err) {
       console.error("tts error:", err);
-      res.status(500).json({ error: "فشل تحويل النص لصوت" });
+      const friendly = aiErrorMessage(err);
+      res.status(friendly ? 503 : 500).json({ error: friendly || "فشل تحويل النص لصوت" });
     }
   });
 
@@ -1094,7 +1110,8 @@ export function startServer() {
       res.json({ analysis });
     } catch (err) {
       console.error("analyze error:", err);
-      res.status(500).json({ error: "فشل التحليل" });
+      const friendly = aiErrorMessage(err);
+      res.status(friendly ? 503 : 500).json({ error: friendly || "فشل التحليل" });
     }
   });
 
@@ -1109,7 +1126,8 @@ export function startServer() {
       res.json({ report, data });
     } catch (err) {
       console.error("report error:", err);
-      res.status(500).json({ error: "فشل توليد التقرير" });
+      const friendly = aiErrorMessage(err);
+      res.status(friendly ? 503 : 500).json({ error: friendly || "فشل توليد التقرير" });
     }
   });
 
@@ -1125,7 +1143,8 @@ export function startServer() {
       res.json({ condition, summary, timeline: items });
     } catch (err) {
       console.error("doctor report error:", err);
-      res.status(500).json({ error: "فشل توليد التقرير" });
+      const friendly = aiErrorMessage(err);
+      res.status(friendly ? 503 : 500).json({ error: friendly || "فشل توليد التقرير" });
     }
   });
 

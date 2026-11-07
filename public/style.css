@@ -2180,3 +2180,26 @@ select.field { cursor: pointer; }
    z-index، فترتيب الـDOM كان بيخلّيها تغطّي التأكيد → الشاشة تسوّد والزراير
    مش شغّالة والوعد بتاع askConfirm مابيتحلّش (التطبيق يبان واقف). */
 #confirmOverlay { z-index: 300; }
+
+/* ===========================================================================
+   بانر إعداد مزود الذكاء — أول مرة بس (لما مفيش مفتاح متظبط)
+   نفس لغة دوّنلي: ورق فاتح، حدود دافئة، وأيقونة في دايرة wash خضرا.
+   =========================================================================== */
+.ai-setup-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+  padding: 16px 20px;
+  background: var(--brand-wash);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.ai-setup-banner[hidden] { display: none; }
+.asb-ico { font-size: 22px; line-height: 1; }
+.asb-text { flex: 1; min-width: 220px; }
+.asb-title { display: block; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.asb-sub { margin: 0; font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.8; }
+.asb-readonly { padding: 0 20px; }

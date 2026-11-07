@@ -407,6 +407,8 @@ async function renderAiCostPage() {
 }
 $("costChip")?.addEventListener("click", () => gotoTab("aicost"));
 document.querySelector("[data-refresh-aicost]")?.addEventListener("click", renderAiCostPage);
+// بانر الإعداد: يفتح شيت إعدادات الذكاء لصاحب التطبيق
+$("aiSetupBtn")?.addEventListener("click", () => openAiSettings());
 
 // زرار المايك العائم يختفي وقت ما يفتح أي شيت/قائمة عشان ميركبش فوق المحتوى
 function syncFab() {
@@ -1062,6 +1064,26 @@ function renderAboutCore() {
   el.innerHTML =
     card("🌍", "الجنسية / البلد", nat, "لسه دوّنلي ما يعرفهاش — قوله أو ضيفها") +
     card("💱", "العملات اللي بتستخدمها", cur, "لسه ما اتحددتش — قوله أو ضيفها");
+}
+
+// بانر إعداد مزود الذكاء: يظهر لو الذكاء مش متظبط.
+// صاحب التطبيق بيشوف زرار «ظبّطه دلوقتي»؛ المستخدم العادي بيشوف شرح مختصر
+// إن التسجيل بالكلام هيتفعّل قريب — بدل ما يفشل من غير سبب.
+function renderAiSetupBanner() {
+  const banner = $("aiSetupBanner");
+  if (!banner) return;
+  const show = state.me && state.me.aiReady === false;
+  banner.hidden = !show;
+  if (!show) return;
+  const owner = !!state.me.isOwner;
+  const btn = $("aiSetupBtn");
+  if (btn) btn.style.display = owner ? "" : "none";
+  const sub = $("aiSetupSub");
+  if (sub) {
+    sub.textContent = owner
+      ? "من غير مفتاح مزود، دوّنلي مش هيقدر يفهم كلامك ويستخرج منه مصاريفك وعاداتك ومهامك. حط مفتاح OpenAI أو Gemini أو Grok وكل حاجة هتشتغل."
+      : "دوّنلي لسه مش متظبط على مزود ذكاء. كلّم صاحب التطبيق يظبّطه وعندها التسجيل بالكلام هيشتغل — لحد ما يحصل، تقدر تسجّل بياناتك بإيدك من التبويبات.";
+  }
 }
 
 function renderOverview() {
@@ -3435,6 +3457,7 @@ async function loadAll(rerender = true) {
   $("userName").textContent = state.me?.name || "صاحب الدفتر";
   // إعدادات التطبيق (الذكاء + التحديثات) لصاحب التطبيق بس
   for (const el of document.querySelectorAll(".owner-only")) el.style.display = state.me?.isOwner ? "" : "none";
+  renderAiSetupBanner();
   fillCategorySelect();
 
   if (!rerender) return;
